@@ -233,9 +233,7 @@ class AcmeSh extends FroxlorCron
 			");
 			$froxlor_ssl = Database::pexecute_first($froxlor_ssl_settings_stmt);
 			// also check for possible existing certificate
-			if (($froxlor_ssl && empty($froxlor_ssl['validtodate']))
-				|| (!$froxlor_ssl && !self::checkFsFilesAreNewer(Settings::Get('system.hostname'), date('Y-m-d H:i:s')))
-			) {
+			if (!$froxlor_ssl || empty($froxlor_ssl['validtodate'])) {
 				return true;
 			}
 		}
@@ -397,6 +395,7 @@ EOC;
 				AND dom.`aliasdomain` IS NULL
 				AND dom.`iswildcarddomain` = 0
 				AND dom.`email_only` = 0
+				AND dom.`ssl_redirect` != 2
 		");
 		$renew_certs = $certificates_stmt->fetchAll(PDO::FETCH_ASSOC);
 		if ($renew_certs) {

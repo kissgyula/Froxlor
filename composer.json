@@ -46,7 +46,6 @@
 		"ext-fileinfo": "*",
 		"ext-gmp": "*",
 		"ext-gd": "*",
-		"ext-gnupg": "*",
 		"phpmailer/phpmailer": "~6.0",
 		"monolog/monolog": "^1.24",
 		"robthree/twofactorauth": "^1.6",
@@ -73,6 +72,7 @@
 	"suggest": {
 		"ext-bcmath": "*",
 		"ext-zip": "*",
+		"ext-gnupg": "*",
 		"ext-apcu": "*",
 		"ext-readline": "*"
 	},
@@ -89,6 +89,10 @@
 		}
 	},
 	"scripts": {
+		"dev": [
+			"Composer\\Config::disableProcessTimeout",
+			"npx concurrently -c \"#93c5fd,#fdba74\" \"php -S 127.0.0.1:8000\" \"npm run dev\" --names=server,vite"
+		],
 		"post-install-cmd": "if [ -f ./vendor/bin/phpcs ]; then \"vendor/bin/phpcs\" --config-set installed_paths vendor/phpcompatibility/php-compatibility ; fi",
 		"post-update-cmd" : "if [ -f ./vendor/bin/phpcs ]; then \"vendor/bin/phpcs\" --config-set installed_paths vendor/phpcompatibility/php-compatibility ; fi"
 	}

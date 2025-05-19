@@ -31,7 +31,7 @@ final class Froxlor
 {
 
 	// Main version variable
-	const VERSION = '2.2.5';
+	const VERSION = '2.2.7';
 
 	// Database version (YYYYMMDDC where C is a daily counter)
 	const DBVERSION = '202412030';
@@ -316,7 +316,7 @@ final class Froxlor
 	 * @param array|null $arr
 	 * @return void
 	 */
-	private static function parseVersionArray(array &$arr = null)
+	private static function parseVersionArray(?array &$arr)
 	{
 		// -dev or -beta or -rc ?
 		if (stripos($arr[count($arr) - 1], '-') !== false) {
