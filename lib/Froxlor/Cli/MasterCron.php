@@ -1,8 +1,8 @@
 <?php
 
 /**
- * This file is part of the Froxlor project.
- * Copyright (c) 2010 the Froxlor Team (see authors).
+ * This file is part of the froxlor project.
+ * Copyright (c) 2010 the froxlor Team (see authors).
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -19,7 +19,7 @@
  * https://files.froxlor.org/misc/COPYING.txt
  *
  * @copyright  the authors
- * @author     Froxlor team <team@froxlor.org>
+ * @author     froxlor team <team@froxlor.org>
  * @license    https://files.froxlor.org/misc/COPYING.txt GPLv2
  */
 
@@ -149,6 +149,9 @@ final class MasterCron extends CliCommand
 			}
 		}
 
+		// possible long-running jobs disconnect from the database
+		Settings::refreshState();
+
 		// regenerate nss-extrausers files / invalidate nscd cache (if used)
 		$this->refreshUsers((int)$tasks_cnt['jobcnt']);
 
@@ -157,6 +160,8 @@ final class MasterCron extends CliCommand
 		//so users in the database don't conflict with system users
 		$this->cronLog->logAction(FroxlorLogger::CRON_ACTION, LOG_NOTICE, 'Checking system\'s last guid');
 		Cronjob::checkLastGuid();
+		$this->cronLog->logAction(FroxlorLogger::CRON_ACTION, LOG_NOTICE, 'Checking system\'s OS version');
+		Cronjob::checkCurrentDistro();
 
 		// check for cron.d-generation task and create it if necessary
 		CronConfig::checkCrondConfigurationFile();
@@ -242,8 +247,7 @@ final class MasterCron extends CliCommand
 			'startts' => time(),
 			'pid' => getmypid()
 		];
-		file_put_contents($this->lockFile, json_encode($jobinfo));
-		return true;
+		return file_put_contents($this->lockFile, json_encode($jobinfo)) !== false;
 	}
 
 	private function unlockJob(): bool

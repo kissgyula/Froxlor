@@ -1,8 +1,8 @@
 <?php
 
 /**
- * This file is part of the Froxlor project.
- * Copyright (c) 2010 the Froxlor Team (see authors).
+ * This file is part of the froxlor project.
+ * Copyright (c) 2010 the froxlor Team (see authors).
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -19,7 +19,7 @@
  * https://files.froxlor.org/misc/COPYING.txt
  *
  * @copyright  the authors
- * @author     Froxlor team <team@froxlor.org>
+ * @author     froxlor team <team@froxlor.org>
  * @license    https://files.froxlor.org/misc/COPYING.txt GPLv2
  */
 
@@ -109,17 +109,11 @@ class DbManagerMySQL
 			Database::pexecute($stmt, [
 				"password" => $password
 			]);
-			// grant privileges
-			$grants = "ALL";
-			if ($grant_access_prefix) {
-				$grants = "SELECT, INSERT, UPDATE, DELETE, DROP, INDEX, ALTER";
-			}
-			$stmt = Database::prepare("
-				GRANT " . $grants . " ON `" . $username . ($grant_access_prefix ? '%' : '') . "`.* TO `" . $username . "`@`" . $access_host . "`
-			");
-			Database::pexecute($stmt);
-
-			if ($grant_access_prefix) {
+			// grant privileges if not global user
+			if (!$grant_access_prefix) {
+				Database::query("GRANT ALL ON `" . str_replace('_', '\_', $username) . "`.* TO `" . $username . "`@`" . $access_host . "`");
+			} else {
+				// grant explicitly to existing databases
 				$this->grantCreateToCustomerDbs($username, $access_host);
 			}
 		} else {
@@ -245,13 +239,9 @@ class DbManagerMySQL
 	{
 		// check whether user exists to avoid errors
 		if ($this->userExistsOnHost($username, $host)) {
-			$grants = "ALL PRIVILEGES";
-			if ($grant_access_prefix) {
-				$grants = "SELECT, INSERT, UPDATE, DELETE, DROP, INDEX, ALTER";
-			}
-			Database::query('GRANT ' . $grants . ' ON `' . $username . ($grant_access_prefix ? '%' : '') . '`.* TO `' . $username . '`@`' . $host . '`');
-			Database::query('GRANT ' . $grants . ' ON `' . str_replace('_', '\_', $username) . ($grant_access_prefix ? '%' : '') . '` . * TO `' . $username . '`@`' . $host . '`');
-			if ($grant_access_prefix) {
+			if (!$grant_access_prefix) {
+				Database::query('GRANT ALL PRIVILEGES ON `' . str_replace('_', '\_', $username) . '`.* TO `' . $username . '`@`' . $host . '`');
+			} else {
 				$this->grantCreateToCustomerDbs($username, $host);
 			}
 		}
@@ -337,7 +327,7 @@ class DbManagerMySQL
 			Database::needRoot(true, $currentDbServer, false);
 			while ($dbdata = $sel_stmt->fetch(\PDO::FETCH_ASSOC)) {
 				$stmt = Database::prepare("
-					GRANT ALL ON `" . $dbdata['databasename'] . "`.* TO `" . $username . "`@`" . $access_host . "`
+					GRANT ALL ON `" . str_replace('_', '\_', $dbdata['databasename']) . "`.* TO `" . $username . "`@`" . $access_host . "`
 				");
 				Database::pexecute($stmt);
 			}
@@ -358,7 +348,7 @@ class DbManagerMySQL
 		// only grant permission if the user exists
 		if ($this->userExistsOnHost($username, $access_host)) {
 			$stmt = Database::prepare("
-				GRANT ALL ON `" . $database . "`.* TO `" . $username . "`@`" . $access_host . "`
+				GRANT ALL ON `" . str_replace('_', '\_', $database) . "`.* TO `" . $username . "`@`" . $access_host . "`
 			");
 			Database::pexecute($stmt);
 		}
