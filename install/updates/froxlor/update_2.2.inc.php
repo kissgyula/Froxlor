@@ -1,8 +1,8 @@
 <?php
 
 /**
- * This file is part of the Froxlor project.
- * Copyright (c) 2010 the Froxlor Team (see authors).
+ * This file is part of the froxlor project.
+ * Copyright (c) 2010 the froxlor Team (see authors).
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -19,7 +19,7 @@
  * https://files.froxlor.org/misc/COPYING.txt
  *
  * @copyright  the authors
- * @author     Froxlor team <team@froxlor.org>
+ * @author     froxlor team <team@froxlor.org>
  * @license    https://files.froxlor.org/misc/COPYING.txt GPLv2
  */
 
@@ -230,11 +230,15 @@ if (Froxlor::isDatabaseVersion('202411200')) {
 			// get DbManager
 			$dbm = new DbManager(FroxlorLogger::getInstanceOf());
 			foreach (array_map('trim', explode(',', Settings::Get('system.mysql_access_host'))) as $mysql_access_host) {
-				if ($dbm->getManager()->userExistsOnHost($customer['loginname'], $mysql_access_host)) {
-					// deactivate temporarily
-					$dbm->getManager()->disableUser($customer['loginname'], $mysql_access_host);
-					// re-enable
-					$dbm->getManager()->enableUser($customer['loginname'], $mysql_access_host, true);
+				try {
+					if ($dbm->getManager()->userExistsOnHost($customer['loginname'], $mysql_access_host)) {
+						// deactivate temporarily
+						$dbm->getManager()->disableUser($customer['loginname'], $mysql_access_host);
+						// re-enable
+						$dbm->getManager()->enableUser($customer['loginname'], $mysql_access_host, true);
+					}
+				} catch (Exception $e) {
+					// continue
 				}
 			}
 			$dbm->getManager()->flushPrivileges();
@@ -255,3 +259,9 @@ if (Froxlor::isFroxlorVersion('2.2.6')) {
 	Update::showUpdateStep("Updating from 2.2.6 to 2.2.7", false);
 	Froxlor::updateToVersion('2.2.7');
 }
+
+if (Froxlor::isFroxlorVersion('2.2.7')) {
+	Update::showUpdateStep("Updating from 2.2.7 to 2.2.8", false);
+	Froxlor::updateToVersion('2.2.8');
+}
+

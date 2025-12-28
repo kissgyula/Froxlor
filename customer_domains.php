@@ -1,8 +1,8 @@
 <?php
 
 /**
- * This file is part of the Froxlor project.
- * Copyright (c) 2010 the Froxlor Team (see authors).
+ * This file is part of the froxlor project.
+ * Copyright (c) 2010 the froxlor Team (see authors).
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -19,7 +19,7 @@
  * https://files.froxlor.org/misc/COPYING.txt
  *
  * @copyright  the authors
- * @author     Froxlor team <team@froxlor.org>
+ * @author     froxlor team <team@froxlor.org>
  * @license    https://files.froxlor.org/misc/COPYING.txt GPLv2
  */
 
@@ -379,8 +379,6 @@ if ($page == 'overview' || $page == 'domains') {
 					"aliasdomain" => $result['id']
 				]);
 				$alias_check = $alias_check['count'];
-
-				$result = PhpHelper::htmlentitiesArray($result);
 
 				$subdomain_edit_data = include_once dirname(__FILE__) . '/lib/formfields/customer/domains/formfield.domains_edit.php';
 

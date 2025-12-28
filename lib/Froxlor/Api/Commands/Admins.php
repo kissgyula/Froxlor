@@ -1,8 +1,8 @@
 <?php
 
 /**
- * This file is part of the Froxlor project.
- * Copyright (c) 2010 the Froxlor Team (see authors).
+ * This file is part of the froxlor project.
+ * Copyright (c) 2010 the froxlor Team (see authors).
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -19,7 +19,7 @@
  * https://files.froxlor.org/misc/COPYING.txt
  *
  * @copyright  the authors
- * @author     Froxlor team <team@froxlor.org>
+ * @author     froxlor team <team@froxlor.org>
  * @license    https://files.froxlor.org/misc/COPYING.txt GPLv2
  */
 
@@ -123,11 +123,12 @@ class Admins extends ApiCommand implements ResourceEntity
 	public function listingCount()
 	{
 		if ($this->isAdmin() && $this->getUserDetail('change_serversettings') == 1) {
+			$query_fields = [];
 			$result_stmt = Database::prepare("
 				SELECT COUNT(*) as num_admins
 				FROM `" . TABLE_PANEL_ADMINS . "`
-			");
-			$result = Database::pexecute_first($result_stmt, null, true, true);
+			" . $this->getSearchWhere($query_fields));
+			$result = Database::pexecute_first($result_stmt, $query_fields, true, true);
 			if ($result) {
 				return $this->response($result['num_admins']);
 			}
@@ -148,8 +149,8 @@ class Admins extends ApiCommand implements ResourceEntity
 	 * @param string $admin_password
 	 *            optional, default auto-generated
 	 * @param string $def_language
-	 * *          optional, ISO 639-1 language code (e.g. 'en', 'de', see lng-folder for supported languages),
-	 * *          default is system-default language
+	 *            optional, ISO 639-1 language code (e.g. 'en', 'de', see lng-folder for supported languages),
+	 *            default is system-default language
 	 * @param bool $gui_access
 	 *            optional, allow login via webui, if false ONLY the login via webui is disallowed; default true
 	 * @param bool $api_allowed
@@ -450,10 +451,10 @@ class Admins extends ApiCommand implements ResourceEntity
 	 * @param string $admin_password
 	 *            optional, default auto-generated
 	 * @param string $def_language
-	 * *          optional, ISO 639-1 language code (e.g. 'en', 'de', see lng-folder for supported languages),
-	 * *          default is system-default language
+	 *            optional, ISO 639-1 language code (e.g. 'en', 'de', see lng-folder for supported languages),
+	 *            default is system-default language
 	 * @param bool $gui_access
-	 * *          optional, allow login via webui, if false ONLY the login via webui is disallowed; default true
+	 *            optional, allow login via webui, if false ONLY the login via webui is disallowed; default true
 	 * @param bool $api_allowed
 	 *            optional, default is true if system setting api.enabled is true, else false
 	 * @param string $custom_notes

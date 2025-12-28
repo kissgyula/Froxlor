@@ -1,8 +1,8 @@
 <?php
 
 /**
- * This file is part of the Froxlor project.
- * Copyright (c) 2010 the Froxlor Team (see authors).
+ * This file is part of the froxlor project.
+ * Copyright (c) 2010 the froxlor Team (see authors).
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -19,7 +19,7 @@
  * https://files.froxlor.org/misc/COPYING.txt
  *
  * @copyright  the authors
- * @author     Froxlor team <team@froxlor.org>
+ * @author     froxlor team <team@froxlor.org>
  * @license    https://files.froxlor.org/misc/COPYING.txt GPLv2
  */
 
@@ -169,6 +169,7 @@ class Nginx extends HttpConfigBase
 				}
 
 				$http2 = $ssl_vhost == true && Settings::Get('system.http2_support') == '1';
+				$http3 = $ssl_vhost == true && Settings::Get('system.http3_support') == '1';
 
 				/**
 				 * this HAS to be set for the default host in nginx or else no vhost will work
@@ -176,6 +177,13 @@ class Nginx extends HttpConfigBase
 				$this->nginx_data[$vhost_filename] .= "\t" . 'listen    ' . $ip . ':' . $port . ' default_server' . ($ssl_vhost == true ? ' ssl' : '') . ($http2 && !$this->http2_on_directive ? ' http2' : '') . ';' . "\n";
 				if ($http2 && $this->http2_on_directive) {
 					$this->nginx_data[$vhost_filename] .= "\t" . 'http2 on;' . "\n";
+				}
+				if ($http3) {
+					$this->nginx_data[$vhost_filename] .= "\t" . 'listen    ' . $ip . ':' . $port . ' default_server quic reuseport;' . "\n";
+					$this->nginx_data[$vhost_filename] .= "\t" . 'http3 on;' . "\n";
+					$this->nginx_data[$vhost_filename] .= "\t" . 'quic_gso on;' . "\n";
+					$this->nginx_data[$vhost_filename] .= "\t" . 'quic_retry on;' . "\n";
+					$this->nginx_data[$vhost_filename] .= "\t" . 'add_header Alt-Svc \'h3=":' . $port . '"; ma=86400\' always;' . "\n";
 				}
 				$this->nginx_data[$vhost_filename] .= "\t" . '# Froxlor default vhost' . "\n";
 
@@ -275,8 +283,10 @@ class Nginx extends HttpConfigBase
 					$this->nginx_data[$vhost_filename] .= "\t\tfastcgi_split_path_info ^(.+?\.php)(/.*)$;\n";
 					$this->nginx_data[$vhost_filename] .= "\t\tinclude " . Settings::Get('nginx.fastcgiparams') . ";\n";
 					$this->nginx_data[$vhost_filename] .= "\t\tfastcgi_param SCRIPT_FILENAME \$request_filename;\n";
-					$this->nginx_data[$vhost_filename] .= "\t\tfastcgi_param PATH_INFO \$fastcgi_path_info;\n";
 					$this->nginx_data[$vhost_filename] .= "\t\ttry_files \$fastcgi_script_name =404;\n";
+					$this->nginx_data[$vhost_filename] .= "\t\tset \$path_info \$fastcgi_path_info;\n";
+					$this->nginx_data[$vhost_filename] .= "\t\tfastcgi_param PATH_INFO \$path_info;\n";
+
 
 					if ($row_ipsandports['ssl'] == '1') {
 						$this->nginx_data[$vhost_filename] .= "\t\tfastcgi_param HTTPS on;\n";
@@ -432,10 +442,10 @@ class Nginx extends HttpConfigBase
 					if ($domain_or_ip['hsts_preload'] == 1) {
 						$sslsettings .= '; preload';
 					}
-					$sslsettings .= '";' . "\n";
+					$sslsettings .= '" always;' . "\n";
 				}
 
-				if ((isset($domain_or_ip['ocsp_stapling']) && $domain_or_ip['ocsp_stapling'] == "1") || (isset($domain_or_ip['letsencrypt']) && $domain_or_ip['letsencrypt'] == "1")) {
+				if ((isset($domain_or_ip['ocsp_stapling']) && $domain_or_ip['ocsp_stapling'] == "1")) {
 					$sslsettings .= "\t" . 'ssl_stapling on;' . "\n";
 					$sslsettings .= "\t" . 'ssl_stapling_verify on;' . "\n";
 					$sslsettings .= "\t" . 'ssl_trusted_certificate ' . FileDir::makeCorrectFile($domain_or_ip['ssl_cert_file']) . ';' . "\n";
@@ -515,6 +525,7 @@ class Nginx extends HttpConfigBase
 			'domainid' => $domain['id']
 		]);
 
+		$http3 = $ssl_vhost == true && (isset($domain['http3']) && $domain['http3'] == '1' && Settings::Get('system.http3_support') == '1');
 		while ($ipandport = $result_stmt->fetch(PDO::FETCH_ASSOC)) {
 			$domain['ip'] = $ipandport['ip'];
 			$domain['port'] = $ipandport['port'];
@@ -550,6 +561,16 @@ class Nginx extends HttpConfigBase
 				$vhost_content .= "\t" . 'http2 on;' . "\n";
 				$has_http2_on = true;
 			}
+			if ($http3) {
+				$vhost_content .= "\t" . 'listen    ' . $ipport . ' quic;' . "\n";
+			}
+		}
+
+		if ($http3) {
+			$vhost_content .= "\t" . 'add_header Alt-Svc \'h3=":' . $domain['port'] . '"; ma=86400\' always;' . "\n";
+			$vhost_content .= "\t" . 'http3 on;' . "\n";
+			$vhost_content .= "\t" . 'quic_gso on;' . "\n";
+			$vhost_content .= "\t" . 'quic_retry on;' . "\n";
 		}
 
 		// get all server-names
@@ -1163,7 +1184,8 @@ class Nginx extends HttpConfigBase
 			$phpopts .= "\t\tfastcgi_split_path_info ^(.+?\.php)(/.*)$;\n";
 			$phpopts .= "\t\tinclude " . Settings::Get('nginx.fastcgiparams') . ";\n";
 			$phpopts .= "\t\tfastcgi_param SCRIPT_FILENAME \$request_filename;\n";
-			$phpopts .= "\t\tfastcgi_param PATH_INFO \$fastcgi_path_info;\n";
+			$phpopts .= "\t\tset \$path_info \$fastcgi_path_info;\n";
+			$phpopts .= "\t\tfastcgi_param PATH_INFO \$path_info;\n";
 			$phpopts .= "\t\tfastcgi_pass " . Settings::Get('system.nginx_php_backend') . ";\n";
 			$phpopts .= "\t\tfastcgi_index index.php;\n";
 			if ($domain['ssl'] == '1' && $ssl_vhost) {
